@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Biasa Tur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <style>
+    :root { font-family: system-ui,-apple-system,"Segoe UI"; }
+    body {
+      margin:0; background:#111827;
+      display:flex; justify-content:center;
+      padding:16px; color:#e5e7eb;
+    }
+    .app { width:100%; max-width:480px; display:flex; flex-direction:column; gap:12px; }
+    .card {
+      background:#1e293b; padding:16px; border-radius:16px;
+      border:1px solid #475569; display:flex; flex-direction:column; gap:10px;
+    }
+    .controls { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn {
+      flex:1; min-width:calc(50% - 4px); padding:10px;
+      border-radius:999px; border:none; cursor:pointer;
+      background:#334155; color:white; display:flex; justify-content:center; gap:6px;
+    }
+    .btn-primary { background:#4f46e5; }
+    .editor-panel {
+      background:#0f172a; border:1px solid #475569; border-radius:10px;
+      padding:12px; display:none; flex-direction:column; gap:8px; font-size:.8rem;
+    }
+    .editor-panel.show { display:flex; }
+    .canvas-wrapper { border:1px solid #475569; background:#000; }
+    canvas { width:100%; display:block; }
+    .placeholder { padding:40px 10px; text-align:center; color:#9ca3af; }
+    input {
+      width:100%; padding:8px; border-radius:8px;
+      border:1px solid #475569; background:#1e293b; color:white;
+      box-sizing:border-box;
+    }
+    textarea {
+      width:100%; padding:8px; border-radius:8px;
+      border:1px solid #475569; background:#1e293b; color:white;
+      box-sizing:border-box;
+      min-height:70px;
+      resize:vertical;
+    }
+    /* Sembunyikan input detik */
+    #secInputWrapper { display:none; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="card">
+
+    <strong>Editna Foto Bang</strong>
+    <br><br>
+
+    <div class="controls">
+      <label class="btn">
+        🖼️ Pilih Gambar
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+      </label>
+
+      <button class="btn" id="editToggleBtn">✏️ Edit Tanggal</button>
+      <button class="btn btn-primary" id="downloadBtn">⬇️ Download</button>
+    </div>
+
+    <div class="editor-panel" id="editorPanel">
+      <label>Tanggal</label>
+      <input type="date" id="dateInput">
+
+      <label>Jam & Menit</label>
+      <input type="time" id="timeInput" step="60">
+
+      <!-- Detik disembunyikan -->
+      <div id="secInputWrapper">
+        <label>Detik</label>
+        <input type="number" id="secInput" min="0" max="59">
+      </div>
+
+      <label>Alamat (tiap baris = 1 line)</label>
+      <textarea id="addressInput"></textarea>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="canvas"></canvas>
+      <div class="placeholder" id="placeholder">Pilih gambar terlebih dahulu.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const placeholder = document.getElementById("placeholder");
+
+  const fileInput = document.getElementById("fileInput");
+  const editToggleBtn = document.getElementById("editToggleBtn");
+  const downloadBtn = document.getElementById("downloadBtn");
+  const editorPanel = document.getElementById("editorPanel");
+
+  const dateInput = document.getElementById("dateInput");
+  const timeInput = document.getElementById("timeInput");
+  const secInput  = document.getElementById("secInput");
+  const addressInput = document.getElementById("addressInput");
+
+  let img = new Image();
+  let imgLoaded = false;
+
+  const defaultAddress = [
+    "Jalan Dieng",
+    "Kecamatan Kejajar",
+    "Kabupaten Wonosobo",
+    "Jawa Tengah"
+  ];
+
+  let currentDate = new Date();
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+
+  function initInputs(){
+    dateInput.value = `${currentDate.getFullYear()}-${pad2(currentDate.getMonth()+1)}-${pad2(currentDate.getDate())}`;
+    timeInput.value = `${pad2(currentDate.getHours())}:${pad2(currentDate.getMinutes())}`;
+    secInput.value  = pad2(currentDate.getSeconds());
+    addressInput.value = defaultAddress.join("\n");
+  }
+  initInputs();
+
+  function combineDateTime(){
+    if (!dateInput.value || !timeInput.value) return;
+
+    const d = new Date(dateInput.value);
+    const [h,m] = timeInput.value.split(":").map(Number);
+    const s = Number(secInput.value) || 0;
+
+    d.setHours(h||0);
+    d.setMinutes(m||0);
+    d.setSeconds(s);
+
+    currentDate = d;
+    render();
+  }
+
+  function formatDateTime(d){
+    const M = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+    return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()} ${pad2(d.getHours())}.${pad2(d.getMinutes())}.${pad2(d.getSeconds())}`;
+  }
+
+  function render(){
+    if (!imgLoaded) return;
+
+    const maxW=2000, maxH=2000;
+    const sw=img.naturalWidth, sh=img.naturalHeight;
+    const sc=Math.min(maxW/sw, maxH/sh, 1);
+
+    const w=Math.round(sw*sc);
+    const h=Math.round(sh*sc);
+
+    canvas.width=w;
+    canvas.height=h;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.drawImage(img,0,0,w,h);
+
+    // Ambil alamat dari textarea, tiap baris jadi 1 line
+    const addressLines = addressInput.value
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l);
+
+    const lines=[formatDateTime(currentDate), ...addressLines];
+
+    const ref = Math.max(w,h);
+    const blockHeight = ref * 0.20;
+
+    const lineCount = lines.length || 1;
+    const lineSpacing = 0.9; // tinggi spasi teks 0.9
+    const lineHeight = (blockHeight / lineCount) * lineSpacing;
+
+    let fontSize = lineHeight * 0.8;
+    const fontFamily='system-ui,-apple-system,"Segoe UI"';
+    ctx.font=`${fontSize}px ${fontFamily}`;
+    ctx.fillStyle="white";
+    ctx.textAlign="right";
+
+    const margin=6;
+    const padR=12, padB=6;
+
+    let y = h - (margin + padB);
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      ctx.fillText(lines[i], w - (margin + padR), y);
+      y -= lineHeight;
+    }
+  }
+
+  function dataUrlSizeKB(url){
+    const b64=url.split(",")[1]||"";
+    return (b64.length * 3 / 4) / 1024;
+  }
+
+  function getJpeg300to400KB(){
+    const min=300,max=400;
+    let low=0.4,high=0.95;
+    let best=null, bestDiff=999999;
+
+    for(let i=0;i<7;i++){
+      const q=(low+high)/2;
+      const url=canvas.toDataURL("image/jpeg", q);
+      const size=dataUrlSizeKB(url);
+
+      let diff=(size<min)?(min-size):(size>max)?(size-max):0;
+      if(diff < bestDiff){ bestDiff=diff; best=url; }
+
+      if(size>max) high=q;
+      else low=q;
+    }
+    return best;
+  }
+
+  fileInput.addEventListener("change", e=>{
+    const f=e.target.files[0];
+    if(!f) return;
+
+    const fr=new FileReader();
+    fr.onload = ev=>{
+      img = new Image();
+      img.onload=()=>{
+        imgLoaded=true;
+        placeholder.style.display="none";
+        render();
+      };
+      img.src=ev.target.result;
+    };
+    fr.readAsDataURL(f);
+  });
+
+  editToggleBtn.addEventListener("click", ()=> editorPanel.classList.toggle("show"));
+
+  dateInput.addEventListener("change", ()=>{ combineDateTime(); editorPanel.classList.remove("show"); });
+  timeInput.addEventListener("change", ()=>{ combineDateTime(); editorPanel.classList.remove("show"); });
+  secInput.addEventListener("change",  ()=>{ combineDateTime(); editorPanel.classList.remove("show"); });
+
+  downloadBtn.addEventListener("click", ()=>{
+    if (!imgLoaded){ alert("Pilih gambar dahulu."); return; }
+
+    const url = getJpeg300to400KB();
+
+    const a=document.createElement("a");
+    a.download="biasa tur.jpg";
+    a.href=url;
+    a.click();     // langsung download tanpa popup
+  });
+</script>
+
+</body>
+</html>

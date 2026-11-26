@@ -170,6 +170,11 @@
             <i class="fa-regular fa-clock text-amber-500"></i>
             <span>Sekarang</span>
           </button>
+          <input type="file" id="image-upload" accept="image/*" class="hidden">
+          <button id="btn-add-photo" type="button" class="text-xs sm:text-sm bg-slate-800 hover:bg-slate-900 text-white font-semibold px-3 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-regular fa-image text-amber-400"></i>
+            <span>Tambah Foto</span>
+          </button>
           <button id="btn-download-top" type="button" class="text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-white font-semibold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
             <i class="fa-solid fa-download"></i>
             <span>Unduh</span>
@@ -178,74 +183,48 @@
       </div>
     </header>
 
-    <!-- Main Container: Baris 1 (Foto & Maps dalam 1 Baris), Baris 2 (Detail Ringkas), Baris 3 (Hasil Foto) -->
+    <!-- Main Container: Baris 1 (Maps Lebar Penuh), Baris 2 (Detail Ringkas), Baris 3 (Hasil Foto) -->
     <main class="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5 flex-1 space-y-4">
 
-      <!-- BARIS 1: TAMBAHKAN FOTO (KIRI) & PILIH LOKASI / MAPS (KANAN) DALAM 1 BARIS -->
-      <div class="grid grid-cols-2 gap-3 sm:gap-5 items-stretch">
+      <!-- BARIS 1: KOTAK MAPS LEBAR PENUH -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-col gap-2.5 min-w-0">
+        <h2 class="font-bold text-slate-800 text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 truncate">
+          <i class="fa-solid fa-location-dot text-emerald-600 shrink-0"></i>
+          <span class="truncate">Pilih Lokasi</span>
+        </h2>
 
-        <!-- KIRI: KOTAK TAMBAH FOTO -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-col gap-2.5 min-w-0">
-          <h2 class="font-bold text-slate-800 text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 truncate">
-            <i class="fa-regular fa-image text-amber-500 shrink-0"></i>
-            <span class="truncate">Tambahkan Foto</span>
-          </h2>
-
-          <!-- Kotak Upload Foto -->
-          <div id="drop-zone" class="relative flex-1 min-h-[190px] sm:min-h-[240px] border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/40 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-center transition cursor-pointer group flex flex-col items-center justify-center">
-            <input type="file" id="image-upload" accept="image/*" class="hidden">
-            <div class="flex flex-col items-center justify-center gap-2">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-amber-500 group-hover:scale-105 transition">
-                <i class="fa-solid fa-cloud-arrow-up text-lg sm:text-xl"></i>
-              </div>
-              <div class="max-w-full px-1">
-                <p class="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Klik / seret foto</p>
-                <p id="file-name-display" class="text-[11px] sm:text-xs text-slate-500 mt-1 truncate max-w-[140px] sm:max-w-[260px] mx-auto">JPG, PNG, WEBP</p>
-              </div>
-            </div>
+        <!-- Pencarian Lokasi & GPS Ringkas -->
+        <div class="flex gap-1.5">
+          <div class="relative flex-1 min-w-0">
+            <input type="text" id="map-search-input" placeholder="Cari lokasi..." class="w-full pl-7 sm:pl-8 pr-2 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition">
+            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] sm:text-xs"></i>
           </div>
-        </section>
+          <button type="button" id="btn-search-map" class="px-2.5 sm:px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl transition shrink-0" title="Cari Lokasi">
+            <span class="hidden sm:inline">Cari</span>
+            <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
+          </button>
+          <button type="button" id="btn-my-location" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition shrink-0" title="Lokasi Saya (GPS)">
+            <i class="fa-solid fa-location-crosshairs text-xs sm:text-sm"></i>
+          </button>
+        </div>
 
-        <!-- KANAN: KOTAK MAPS -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-col gap-2.5 min-w-0">
-          <h2 class="font-bold text-slate-800 text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 truncate">
-            <i class="fa-solid fa-location-dot text-emerald-600 shrink-0"></i>
-            <span class="truncate">Pilih Lokasi</span>
-          </h2>
+        <!-- Peta Interaktif -->
+        <div class="relative rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 min-h-[200px] sm:min-h-[260px] flex-1">
+          <div id="map" class="w-full h-full min-h-[200px] sm:min-h-[260px]"></div>
 
-          <!-- Pencarian Lokasi & GPS Ringkas -->
-          <div class="flex gap-1.5">
-            <div class="relative flex-1 min-w-0">
-              <input type="text" id="map-search-input" placeholder="Cari lokasi..." class="w-full pl-7 sm:pl-8 pr-2 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition">
-              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] sm:text-xs"></i>
-            </div>
-            <button type="button" id="btn-search-map" class="px-2.5 sm:px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl transition shrink-0" title="Cari Lokasi">
-              <span class="hidden sm:inline">Cari</span>
-              <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
-            </button>
-            <button type="button" id="btn-my-location" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition shrink-0" title="Lokasi Saya (GPS)">
-              <i class="fa-solid fa-location-crosshairs text-xs sm:text-sm"></i>
-            </button>
+          <!-- Switcher Tipe Peta -->
+          <div class="absolute top-2 right-2 z-20 flex bg-white/95 backdrop-blur rounded-lg shadow border border-slate-200 p-0.5 text-[10px] sm:text-xs font-semibold">
+            <button type="button" id="layer-street" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-600 text-white transition">Peta</button>
+            <button type="button" id="layer-satellite" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-slate-600 hover:bg-slate-100 transition">Satelit</button>
           </div>
 
-          <!-- Peta Interaktif -->
-          <div class="relative rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 min-h-[150px] sm:min-h-[200px] flex-1">
-            <div id="map" class="w-full h-full min-h-[150px] sm:min-h-[200px]"></div>
-
-            <!-- Switcher Tipe Peta -->
-            <div class="absolute top-2 right-2 z-20 flex bg-white/95 backdrop-blur rounded-lg shadow border border-slate-200 p-0.5 text-[10px] sm:text-xs font-semibold">
-              <button type="button" id="layer-street" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-600 text-white transition">Peta</button>
-              <button type="button" id="layer-satellite" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-slate-600 hover:bg-slate-100 transition">Satelit</button>
-            </div>
-
-            <!-- Indikator Loading -->
-            <div id="map-loading" class="hidden absolute bottom-2 left-2 z-20 bg-slate-900/85 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-              <i class="fa-solid fa-spinner fa-spin text-amber-400"></i>
-              <span>Memuat...</span>
-            </div>
+          <!-- Indikator Loading -->
+          <div id="map-loading" class="hidden absolute bottom-2 left-2 z-20 bg-slate-900/85 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+            <i class="fa-solid fa-spinner fa-spin text-amber-400"></i>
+            <span>Memuat...</span>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       <!-- BARIS 2: EDIT DETAIL WATERMARK RINGKAS -->
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4 space-y-3">
@@ -681,9 +660,8 @@
       const canvas = document.getElementById('preview-canvas');
       const ctx = canvas.getContext('2d');
 
-      const dropZone = document.getElementById('drop-zone');
+      const btnAddPhoto = document.getElementById('btn-add-photo');
       const imageUpload = document.getElementById('image-upload');
-      const fileNameDisplay = document.getElementById('file-name-display');
 
       const logoUpload = document.getElementById('logo-upload');
       const btnUploadLogo = document.getElementById('btn-upload-logo');
@@ -856,7 +834,7 @@
 
         context.fillStyle = 'rgba(255, 255, 255, 0.75)';
         context.font = '400 22px Inter, sans-serif';
-        context.fillText('Unggah foto Anda di Bagian 1 (Kiri Atas) untuk mengganti latar ini', width / 2, height * 0.305);
+        context.fillText('Klik tombol "Tambah Foto" di bagian atas untuk mengunggah foto', width / 2, height * 0.305);
         context.restore();
       }
 
@@ -1184,7 +1162,6 @@
           const img = new Image();
           img.onload = () => {
             mainImage = img;
-            fileNameDisplay.textContent = `${file.name} (${img.naturalWidth} × ${img.naturalHeight} px)`;
             generateRandomCode(false);
             renderCanvas();
             showToast('Foto berhasil dimuat!', 'success');
@@ -1208,23 +1185,10 @@
 
       btnRandomCode.addEventListener('click', () => generateRandomCode(true));
 
-      // Klik & seret foto pada drop-zone
-      dropZone.addEventListener('click', () => imageUpload.click());
+      // Klik tombol Tambah Foto di header
+      btnAddPhoto.addEventListener('click', () => imageUpload.click());
       imageUpload.addEventListener('change', (e) => {
         if (e.target.files[0]) handleImageFile(e.target.files[0]);
-      });
-
-      dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('border-amber-500', 'bg-amber-50');
-      });
-      dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('border-amber-500', 'bg-amber-50');
-      });
-      dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('border-amber-500', 'bg-amber-50');
-        if (e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]);
       });
 
       // Upload Logo Kustom
@@ -1534,4 +1498,4 @@
   </script>
 
 </body>
-</html>                                                                                        </html>
+  </html>

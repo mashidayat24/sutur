@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Biasa Tur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+  <!-- Memuat Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter, Barlow Condensed & Roboto Condensed -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@400&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS & JS untuk peta interaktif (Halaman Kuning) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Font Awesome Icons (Halaman Kuning) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            condensed: ['Barlow Condensed', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    /* Gaya Halaman Putih */
+    #secInputWrapper {
+      display: none;
+    }
+    .editor-panel {
+      display: none;
+    }
+    .editor-panel.show {
+      display: flex;
+    }
+
+    /* Gaya Halaman Kuning (Biasatur 2) */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .leaflet-container {
+      font-family: 'Inter', sans-serif !important;
+      z-index: 10;
+    }
+    .canvas-bg {
+      background-color: #1e293b;
+      background-image: radial-gradient(#334155 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen transition-colors duration-200">
+
+  <!-- ===================================================================== -->
+  <!-- HALAMAN 1: PUTIH (HALAMAN AWAL - BIASA TUR)                           -->
+  <!-- ===================================================================== -->
+  <div id="page-putih" class="min-h-screen flex justify-center p-4 pb-24">
+    <div class="w-full max-w-md flex flex-col gap-3">
+      <div class="bg-slate-800 p-4 rounded-2xl border border-slate-600 shadow-xl flex flex-col gap-3">
+
+        <!-- Header & Indikator Halaman -->
+        <div class="flex items-center justify-between pb-1 border-b border-slate-700/80">
+          <strong class="text-base font-bold text-white tracking-tight">Editna Foto Bang</strong>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/25">
+            <span class="w-2 h-2 rounded-full bg-white"></span>
+            <span>Putih</span>
+          </span>
+        </div>
+
+        <!-- Tombol Kontrol -->
+        <div class="flex gap-2 flex-wrap">
+          <label class="flex-1 min-w-[calc(50%-4px)] py-2.5 px-3 rounded-full bg-slate-700 hover:bg-slate-600 active:scale-95 transition text-white text-sm font-medium flex items-center justify-center gap-1.5 cursor-pointer select-none">
+            <span>🖼️</span>
+            <span>Pilih Gambar</span>
+            <input type="file" id="fileInput" accept="image/*" class="hidden">
+          </label>
+
+          <button id="editToggleBtn" type="button" class="flex-1 min-w-[calc(50%-4px)] py-2.5 px-3 rounded-full bg-slate-700 hover:bg-slate-600 active:scale-95 transition text-white text-sm font-medium flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>✏️</span>
+            <span>Edit Tanggal</span>
+          </button>
+
+          <button id="downloadBtn" type="button" class="w-full py-2.5 px-4 rounded-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition text-white text-sm font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-indigo-900/40">
+            <span>⬇️</span>
+            <span>Download</span>
+          </button>
+        </div>
+
+        <!-- Panel Editor Tanggal, Jam, dan Alamat -->
+        <div id="editorPanel" class="editor-panel bg-slate-900 border border-slate-600 rounded-xl p-3 flex-col gap-2 text-xs">
+          <label for="dateInput" class="text-slate-300 font-medium">Tanggal</label>
+          <input type="date" id="dateInput" class="w-full p-2 rounded-lg border border-slate-600 bg-slate-800 text-white focus:outline-none focus:border-indigo-500">
+
+          <label for="timeInput" class="text-slate-300 font-medium mt-1">Jam &amp; Menit</label>
+          <input type="time" id="timeInput" step="60" class="w-full p-2 rounded-lg border border-slate-600 bg-slate-800 text-white focus:outline-none focus:border-indigo-500">
+
+          <!-- Detik disembunyikan -->
+          <div id="secInputWrapper">
+            <label for="secInput" class="text-slate-300 font-medium">Detik</label>
+            <input type="number" id="secInput" min="0" max="59" class="w-full p-2 rounded-lg border border-slate-600 bg-slate-800 text-white">
+          </div>
+
+          <label for="addressInput" class="text-slate-300 font-medium mt-1">Kalau tidak diganti, biarkan saja</label>
+          <textarea id="addressInput" class="w-full p-2 rounded-lg border border-slate-600 bg-slate-800 text-white min-h-[84px] resize-y focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <!-- Area Preview Canvas -->
+        <div class="border border-slate-600 bg-black rounded-xl overflow-hidden relative">
+          <canvas id="canvas" class="w-full block"></canvas>
+          <div id="placeholder" class="py-12 px-4 text-center text-slate-400 text-sm">
+            Pilih gambar terlebih dahulu.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Notifikasi Toast Halaman Putih -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-600 text-white text-sm font-medium shadow-lg opacity-0 pointer-events-none transition-opacity duration-300">
+      Pesan notifikasi
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- HALAMAN 2: KUNING (BIASATUR 2 - WATERMARK TIMEMARK + PETA INTERAKTIF) -->
+  <!-- ===================================================================== -->
+  <div id="page-kuning" class="hidden bg-slate-100 text-slate-800 font-sans min-h-screen flex-col pb-20">
+
+    <!-- Toast Notification Container (pengganti alert) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Header Sederhana -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">
+            <span class="text-amber-500">Biasa</span><span class="text-slate-900">tur 2</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">gunakan dengan bijak ya ngek sengek.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-set-now" type="button" class="text-xs sm:text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+            <i class="fa-regular fa-clock text-amber-500"></i>
+            <span>Sekarang</span>
+          </button>
+          <button id="btn-download-top" type="button" class="text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-white font-semibold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i>
+            <span>Unduh</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container: Baris 1 (Foto & Maps dalam 1 Baris), Baris 2 (Detail Ringkas), Baris 3 (Hasil Foto) -->
+    <main class="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5 flex-1 space-y-4">
+
+      <!-- BARIS 1: TAMBAHKAN FOTO (KIRI) & PILIH LOKASI / MAPS (KANAN) DALAM 1 BARIS -->
+      <div class="grid grid-cols-2 gap-3 sm:gap-5 items-stretch">
+
+        <!-- KIRI: KOTAK TAMBAH FOTO -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-col gap-2.5 min-w-0">
+          <h2 class="font-bold text-slate-800 text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 truncate">
+            <i class="fa-regular fa-image text-amber-500 shrink-0"></i>
+            <span class="truncate">Tambahkan Foto</span>
+          </h2>
+
+          <!-- Kotak Upload Foto -->
+          <div id="drop-zone" class="relative flex-1 min-h-[190px] sm:min-h-[240px] border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/40 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-center transition cursor-pointer group flex flex-col items-center justify-center">
+            <input type="file" id="image-upload" accept="image/*" class="hidden">
+            <div class="flex flex-col items-center justify-center gap-2">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-amber-500 group-hover:scale-105 transition">
+                <i class="fa-solid fa-cloud-arrow-up text-lg sm:text-xl"></i>
+              </div>
+              <div class="max-w-full px-1">
+                <p class="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">Klik / seret foto</p>
+                <p id="file-name-display" class="text-[11px] sm:text-xs text-slate-500 mt-1 truncate max-w-[140px] sm:max-w-[260px] mx-auto">JPG, PNG, WEBP</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- KANAN: KOTAK MAPS -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-col gap-2.5 min-w-0">
+          <h2 class="font-bold text-slate-800 text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 truncate">
+            <i class="fa-solid fa-location-dot text-emerald-600 shrink-0"></i>
+            <span class="truncate">Pilih Lokasi</span>
+          </h2>
+
+          <!-- Pencarian Lokasi & GPS Ringkas -->
+          <div class="flex gap-1.5">
+            <div class="relative flex-1 min-w-0">
+              <input type="text" id="map-search-input" placeholder="Cari lokasi..." class="w-full pl-7 sm:pl-8 pr-2 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition">
+              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] sm:text-xs"></i>
+            </div>
+            <button type="button" id="btn-search-map" class="px-2.5 sm:px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl transition shrink-0" title="Cari Lokasi">
+              <span class="hidden sm:inline">Cari</span>
+              <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
+            </button>
+            <button type="button" id="btn-my-location" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition shrink-0" title="Lokasi Saya (GPS)">
+              <i class="fa-solid fa-location-crosshairs text-xs sm:text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Peta Interaktif -->
+          <div class="relative rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 min-h-[150px] sm:min-h-[200px] flex-1">
+            <div id="map" class="w-full h-full min-h-[150px] sm:min-h-[200px]"></div>
+
+            <!-- Switcher Tipe Peta -->
+            <div class="absolute top-2 right-2 z-20 flex bg-white/95 backdrop-blur rounded-lg shadow border border-slate-200 p-0.5 text-[10px] sm:text-xs font-semibold">
+              <button type="button" id="layer-street" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-600 text-white transition">Peta</button>
+              <button type="button" id="layer-satellite" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-slate-600 hover:bg-slate-100 transition">Satelit</button>
+            </div>
+
+            <!-- Indikator Loading -->
+            <div id="map-loading" class="hidden absolute bottom-2 left-2 z-20 bg-slate-900/85 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+              <i class="fa-solid fa-spinner fa-spin text-amber-400"></i>
+              <span>Memuat...</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- BARIS 2: EDIT DETAIL WATERMARK RINGKAS -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4 space-y-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div>
+            <label for="input-time" class="block text-xs font-medium text-slate-600 mb-1">Jam</label>
+            <input type="time" id="input-time" value="08:36" class="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition font-semibold cursor-pointer">
+          </div>
+          <div>
+            <label for="input-date-picker" class="block text-xs font-medium text-slate-600 mb-1">Tanggal</label>
+            <input type="date" id="input-date-picker" value="2026-11-26" class="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition font-semibold cursor-pointer">
+          </div>
+          <div>
+            <label for="input-title1" class="block text-xs font-medium text-slate-600 mb-1">Judul 1</label>
+            <input type="text" id="input-title1" value="KJ KEJAJAR" placeholder="KJ KEJAJAR" class="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition font-semibold">
+          </div>
+          <div>
+            <label for="input-title2" class="block text-xs font-medium text-slate-600 mb-1">Judul 2</label>
+            <input type="text" id="input-title2" value="ULP WONOSOBO" placeholder="ULP WONOSOBO" class="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition font-semibold">
+          </div>
+        </div>
+
+        <!-- Alamat Watermark -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="input-location" class="text-xs font-medium text-slate-600">Alamat Watermark</label>
+            <span id="coord-display" class="text-[11px] font-mono text-slate-400">-7.2586, 109.9482</span>
+          </div>
+          <textarea id="input-location" rows="2" class="w-full px-3 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition leading-snug">Jl. Dieng, Kejajar, Kec. Kejajar, Kabupaten Wonosobo, Jawa Tengah 56354</textarea>
+        </div>
+
+        <!-- Opsi Tambahan (Lipat agar tetap simpel) -->
+        <details class="group bg-slate-50 border border-slate-200 rounded-xl p-2.5 sm:p-3">
+          <summary class="text-xs font-semibold text-slate-600 cursor-pointer select-none flex items-center justify-between">
+            <span>Opsi Tambahan (Logo, Hari/Tanggal Manual, Kode)</span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-600 font-medium">Logo Watermark</span>
+              <div class="flex items-center gap-2">
+                <input type="file" id="logo-upload" accept="image/*" class="hidden">
+                <button type="button" id="btn-upload-logo" class="text-xs text-blue-600 hover:text-blue-700 font-medium bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition">
+                  <i class="fa-regular fa-image mr-1"></i>Ganti Logo
+                </button>
+                <button type="button" id="btn-reset-logo" class="hidden text-xs text-rose-600 hover:text-rose-700 font-medium bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg transition" title="Reset Logo">
+                  <i class="fa-solid fa-rotate-left"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label for="input-day" class="block text-[11px] font-medium text-slate-500 mb-1">Teks Hari</label>
+                <input type="text" id="input-day" value="Kamis" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+              </div>
+              <div>
+                <label for="input-date" class="block text-[11px] font-medium text-slate-500 mb-1">Teks Tanggal</label>
+                <input type="text" id="input-date" value="26 November 2026" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+              </div>
+              <div>
+                <label for="input-code" class="block text-[11px] font-medium text-slate-500 mb-1">Kode Verified</label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="input-code" value="GRPEXRX42BYD3P" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono">
+                  <button type="button" id="btn-random-code" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg transition" title="Acak Kode">
+                    <i class="fa-solid fa-shuffle text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4 pt-1">
+              <label class="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="toggle-timemark-top" checked class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300">
+                <span>Logo Timemark</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="toggle-verified-side" checked class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300">
+                <span>Timemark Verified</span>
+              </label>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- BAWAH: HASIL FOTO YANG SUDAH DIEDIT -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col gap-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+            <span>Hasil Foto yang Sudah Diedit</span>
+          </h2>
+
+          <!-- Menu Dropdown untuk Ukuran, Lebar & Unduh JPG/PNG -->
+          <div class="relative" id="result-dropdown-wrapper">
+            <button type="button" id="btn-result-dropdown" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 transition flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-amber-500"></i>
+              <span>Opsi &amp; Unduh</span>
+              <i id="result-dropdown-chevron" class="fa-solid fa-chevron-down text-xs text-slate-500 transition-transform duration-200"></i>
+            </button>
+
+            <!-- Isi Dropdown -->
+            <div id="result-dropdown-menu" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-30 space-y-3.5">
+              <!-- Pengatur Ukuran -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <label for="watermark-scale" class="font-medium text-slate-600">Ukuran Watermark</label>
+                  <span id="scale-value" class="font-bold text-slate-800">100%</span>
+                </div>
+                <input type="range" id="watermark-scale" min="0.6" max="1.4" step="0.05" value="1" class="w-full accent-amber-500 cursor-pointer">
+              </div>
+
+              <!-- Pengatur Lebar -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <label for="watermark-width" class="font-medium text-slate-600">Lebar Watermark</label>
+                  <span id="width-value" class="font-bold text-slate-800">100%</span>
+                </div>
+                <input type="range" id="watermark-width" min="0.7" max="1.6" step="0.05" value="1" class="w-full accent-amber-500 cursor-pointer">
+              </div>
+
+              <hr class="border-slate-100">
+
+              <!-- Tombol Unduh JPG & PNG -->
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-download-jpg" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-download"></i>
+                  <span>JPG</span>
+                </button>
+                <button type="button" id="btn-download-png" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                  <i class="fa-regular fa-file-image"></i>
+                  <span>PNG</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Area Canvas Pratinjau -->
+        <div class="canvas-bg rounded-2xl p-4 sm:p-6 flex items-center justify-center overflow-hidden min-h-[380px]">
+          <canvas id="preview-canvas" class="max-w-full max-h-[75vh] w-auto h-auto rounded-xl shadow-2xl border border-slate-700/50"></canvas>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer Sederhana -->
+    <footer class="text-center py-4 text-xs text-slate-400 border-t border-slate-200 bg-white mt-4">
+      <span class="font-semibold text-amber-500">Biasa</span><span class="font-semibold text-slate-700">tur 2</span> &bull; gunakan dengan bijak ya ngek sengek.
+    </footer>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- NAVBAR BAWAH (PUTIH & KUNING)                                         -->
+  <!-- ===================================================================== -->
+  <nav aria-label="Navigasi Halaman" class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-700 shadow-2xl">
+    <div class="max-w-md mx-auto flex items-center justify-around p-2 gap-2">
+      <!-- Tab Putih (Halaman Awal) -->
+      <button id="navPutih" type="button" onclick="switchPage('putih')" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all cursor-pointer">
+        <span class="w-3.5 h-3.5 rounded-full bg-white border border-slate-300 shadow-sm"></span>
+        <span>Putih</span>
+      </button>
+
+      <!-- Tab Kuning -->
+      <button id="navKuning" type="button" onclick="switchPage('kuning')" class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all cursor-pointer">
+        <span class="w-3.5 h-3.5 rounded-full bg-yellow-400 border border-yellow-200 shadow-sm"></span>
+        <span>Kuning</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===================================================================== -->
+  <!-- SCRIPT NAVIGASI TAB PUTIH & KUNING                                    -->
+  <!-- ===================================================================== -->
+  <script>
+    window.kuningOnShow = null;
+
+    function switchPage(page) {
+      const pagePutih = document.getElementById("page-putih");
+      const pageKuning = document.getElementById("page-kuning");
+      const navPutih = document.getElementById("navPutih");
+      const navKuning = document.getElementById("navKuning");
+
+      if (page === "putih") {
+        // Tampilkan Halaman Putih, sembunyikan Halaman Kuning
+        pagePutih.classList.remove("hidden");
+        pagePutih.classList.add("flex");
+        pageKuning.classList.add("hidden");
+        pageKuning.classList.remove("flex");
+
+        // Sesuaikan warna latar body
+        document.body.className = "bg-slate-900 text-slate-200 min-h-screen transition-colors duration-200";
+        document.title = "Biasa Tur";
+
+        // Gaya tombol navbar aktif
+        navPutih.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-white text-slate-900 shadow-md";
+        navKuning.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200";
+      } else {
+        // Tampilkan Halaman Kuning, sembunyikan Halaman Putih
+        pagePutih.classList.add("hidden");
+        pagePutih.classList.remove("flex");
+        pageKuning.classList.remove("hidden");
+        pageKuning.classList.add("flex");
+
+        // Sesuaikan warna latar body
+        document.body.className = "bg-slate-100 text-slate-800 min-h-screen transition-colors duration-200";
+        document.title = "Biasatur 2";
+
+        // Gaya tombol navbar aktif
+        navKuning.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-yellow-400 text-slate-900 shadow-md";
+        navPutih.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200";
+
+        // Segarkan ukuran peta Leaflet & canvas Biasatur 2 saat tab Kuning dibuka
+        if (typeof window.kuningOnShow === "function") {
+          window.kuningOnShow();
+        }
+      }
+
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  </script>
+
+  <!-- ===================================================================== -->
+  <!-- SCRIPT HALAMAN PUTIH (BIASA TUR)                                      -->
+  <!-- ===================================================================== -->
+  <script>
+    (function initHalamanPutih() {
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const placeholder = document.getElementById("placeholder");
+
+      const fileInput = document.getElementById("fileInput");
+      const editToggleBtn = document.getElementById("editToggleBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const editorPanel = document.getElementById("editorPanel");
+
+      const dateInput = document.getElementById("dateInput");
+      const timeInput = document.getElementById("timeInput");
+      const secInput  = document.getElementById("secInput");
+      const addressInput = document.getElementById("addressInput");
+      const toast = document.getElementById("toast");
+
+      let img = new Image();
+      let imgLoaded = false;
+      let toastTimer = null;
+
+      const defaultAddress = [
+        "Kejajar",
+        "Kecamatan Kejajar",
+        "Kabupaten Wonosobo",
+        "Jawa Tengah"
+      ];
+
+      let currentDate = new Date();
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.remove("opacity-0", "pointer-events-none");
+        toast.classList.add("opacity-100");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove("opacity-100");
+          toast.classList.add("opacity-0", "pointer-events-none");
+        }, 2500);
+      }
+
+      function pad2(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      function initInputs() {
+        dateInput.value = `${currentDate.getFullYear()}-${pad2(currentDate.getMonth() + 1)}-${pad2(currentDate.getDate())}`;
+        timeInput.value = `${pad2(currentDate.getHours())}:${pad2(currentDate.getMinutes())}`;
+        secInput.value  = pad2(currentDate.getSeconds());
+        addressInput.value = defaultAddress.join("\n");
+      }
+
+      function combineDateTime() {
+        if (!dateInput.value || !timeInput.value) return;
+
+        const d = new Date(dateInput.value);
+        const [h, m] = timeInput.value.split(":").map(Number);
+        const s = Number(secInput.value) || 0;
+
+        d.setHours(h || 0);
+        d.setMinutes(m || 0);
+        d.setSeconds(s);
+
+        currentDate = d;
+        render();
+      }
+
+      function formatDateTime(d) {
+        const M = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+        return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()} ${pad2(d.getHours())}.${pad2(d.getMinutes())}.${pad2(d.getSeconds())}`;
+      }
+
+      function render() {
+        if (!imgLoaded) return;
+
+        try {
+          const maxW = 2000, maxH = 2000;
+          const sw = img.naturalWidth, sh = img.naturalHeight;
+          const sc = Math.min(maxW / sw, maxH / sh, 1);
+
+          const w = Math.round(sw * sc);
+          const h = Math.round(sh * sc);
+
+          canvas.width = w;
+          canvas.height = h;
+
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const addressLines = addressInput.value
+            .split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l);
+
+          const lines = [formatDateTime(currentDate), ...addressLines];
+
+          const ref = Math.max(w, h);
+          const blockHeight = ref * 0.20;
+
+          const lineCount = lines.length || 1;
+          const lineSpacing = 0.9;
+          const lineHeight = (blockHeight / lineCount) * lineSpacing;
+
+          const fontSize = lineHeight * 0.9;
+          const fontFamily = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+          ctx.font = `${fontSize}px ${fontFamily}`;
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "right";
+
+          const margin = 6;
+          const padR = 2, padB = 6;
+
+          let y = h - (margin + padB);
+
+          for (let i = lines.length - 1; i >= 0; i--) {
+            ctx.fillText(lines[i], w - (margin + padR), y);
+            y -= lineHeight;
+          }
+        } catch (err) {
+          console.error("Gagal merender gambar:", err);
+          showToast("Terjadi kesalahan saat memproses gambar.");
+        }
+      }
+
+      function dataUrlSizeKB(url) {
+        const b64 = url.split(",")[1] || "";
+        return (b64.length * 3 / 4) / 1024;
+      }
+
+      function getJpeg300to400KB() {
+        const min = 300, max = 400;
+        let low = 0.4, high = 0.95;
+        let best = null, bestDiff = 999999;
+
+        for (let i = 0; i < 7; i++) {
+          const q = (low + high) / 2;
+          const url = canvas.toDataURL("image/jpeg", q);
+          const size = dataUrlSizeKB(url);
+
+          let diff = (size < min) ? (min - size) : (size > max) ? (size - max) : 0;
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = url;
+          }
+
+          if (size > max) high = q;
+          else low = q;
+        }
+        return best;
+      }
+
+      fileInput.addEventListener("change", e => {
+        const f = e.target.files[0];
+        if (!f) return;
+
+        const fr = new FileReader();
+        fr.onload = ev => {
+          img = new Image();
+          img.onload = () => {
+            imgLoaded = true;
+            placeholder.style.display = "none";
+            render();
+          };
+          img.src = ev.target.result;
+        };
+        fr.readAsDataURL(f);
+      });
+
+      editToggleBtn.addEventListener("click", () => editorPanel.classList.toggle("show"));
+
+      dateInput.addEventListener("change", () => { combineDateTime(); editorPanel.classList.remove("show"); });
+      timeInput.addEventListener("change", () => { combineDateTime(); editorPanel.classList.remove("show"); });
+      secInput.addEventListener("change",  () => { combineDateTime(); editorPanel.classList.remove("show"); });
+      addressInput.addEventListener("input", () => { if (imgLoaded) render(); });
+
+      downloadBtn.addEventListener("click", () => {
+        if (!imgLoaded) {
+          showToast("Pilih gambar dahulu.");
+          return;
+        }
+
+        const url = getJpeg300to400KB();
+        const a = document.createElement("a");
+        a.download = "biasa tur.jpg";
+        a.href = url;
+        a.click();
+      });
+
+      initInputs();
+    })();
+  </script>
+
+  <!-- ===================================================================== -->
+  <!-- SCRIPT HALAMAN KUNING (BIASATUR 2)                                    -->
+  <!-- ===================================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- Elemen DOM ---
+      const canvas = document.getElementById('preview-canvas');
+      const ctx = canvas.getContext('2d');
+
+      const dropZone = document.getElementById('drop-zone');
+      const imageUpload = document.getElementById('image-upload');
+      const fileNameDisplay = document.getElementById('file-name-display');
+
+      const logoUpload = document.getElementById('logo-upload');
+      const btnUploadLogo = document.getElementById('btn-upload-logo');
+      const btnResetLogo = document.getElementById('btn-reset-logo');
+
+      const inputTitle1 = document.getElementById('input-title1');
+      const inputTitle2 = document.getElementById('input-title2');
+      const inputTime = document.getElementById('input-time');
+      const inputDatePicker = document.getElementById('input-date-picker');
+      const inputDay = document.getElementById('input-day');
+      const inputDate = document.getElementById('input-date');
+      const inputLocation = document.getElementById('input-location');
+      const inputCode = document.getElementById('input-code');
+
+      const toggleTimemarkTop = document.getElementById('toggle-timemark-top');
+      const toggleVerifiedSide = document.getElementById('toggle-verified-side');
+      const scaleSlider = document.getElementById('watermark-scale');
+      const scaleValueDisplay = document.getElementById('scale-value');
+      const widthSlider = document.getElementById('watermark-width');
+      const widthValueDisplay = document.getElementById('width-value');
+
+      const btnSetNow = document.getElementById('btn-set-now');
+      const btnRandomCode = document.getElementById('btn-random-code');
+      const btnDownloadTop = document.getElementById('btn-download-top');
+      const btnDownloadJpg = document.getElementById('btn-download-jpg');
+      const btnDownloadPng = document.getElementById('btn-download-png');
+
+      const mapSearchInput = document.getElementById('map-search-input');
+      const btnSearchMap = document.getElementById('btn-search-map');
+      const btnMyLocation = document.getElementById('btn-my-location');
+      const mapLoading = document.getElementById('map-loading');
+      const coordDisplay = document.getElementById('coord-display');
+      const btnLayerStreet = document.getElementById('layer-street');
+      const btnLayerSatellite = document.getElementById('layer-satellite');
+
+      // --- State Aplikasi ---
+      const DEFAULT_LOGO_URL = 'https://iili.io/oqqJazQ.png';
+      let mainImage = null;
+      let customLogoImage = null;
+      let defaultLogoImage = null;
+      let defaultLogoLoaded = false;
+      let watermarkScale = 1.0;
+      let watermarkWidthFactor = 1.0;
+
+      // --- Toast Notification Helper ---
+      function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+
+        const colors = {
+          success: 'bg-emerald-600 text-white',
+          error: 'bg-rose-600 text-white',
+          info: 'bg-slate-800 text-white'
+        };
+        const icons = {
+          success: 'fa-circle-check',
+          error: 'fa-circle-exclamation',
+          info: 'fa-circle-info'
+        };
+
+        toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+        toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', '-translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 3200);
+      }
+
+      // --- Muat Logo Bawaan dari URL ---
+      function loadDefaultLogo() {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          defaultLogoImage = img;
+          defaultLogoLoaded = true;
+          renderCanvas();
+        };
+        img.onerror = () => {
+          defaultLogoLoaded = false;
+          renderCanvas();
+        };
+        img.src = DEFAULT_LOGO_URL;
+      }
+
+      // --- Helper: Menggambar Persegi Panjang Membulat ---
+      function drawRoundedRect(context, x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        context.beginPath();
+        context.moveTo(x + radius, y);
+        context.arcTo(x + w, y, x + w, y + h, radius);
+        context.arcTo(x + w, y + h, x, y + h, radius);
+        context.arcTo(x, y + h, x, y, radius);
+        context.arcTo(x, y, x + w, y, radius);
+        context.closePath();
+      }
+
+      // --- Helper: Membungkus Teks Multi-Baris ---
+      function wrapText(context, text, maxWidth) {
+        const paragraphs = String(text || '').split('\n');
+        const lines = [];
+
+        paragraphs.forEach((paragraph) => {
+          const words = paragraph.trim().split(/\s+/);
+          if (words.length === 0 || (words.length === 1 && words[0] === '')) {
+            return;
+          }
+          let currentLine = words[0];
+
+          for (let i = 1; i < words.length; i++) {
+            const testLine = currentLine + ' ' + words[i];
+            const metrics = context.measureText(testLine);
+            if (metrics.width > maxWidth) {
+              lines.push(currentLine);
+              currentLine = words[i];
+            } else {
+              currentLine = testLine;
+            }
+          }
+          lines.push(currentLine);
+        });
+
+        return lines;
+      }
+
+      // --- Helper: Latar Belakang Foto Contoh Jika Belum Upload ---
+      function drawPlaceholderPhoto(context, width, height) {
+        const grad = context.createLinearGradient(0, 0, width, height);
+        grad.addColorStop(0, '#c89b6e');
+        grad.addColorStop(0.5, '#b08154');
+        grad.addColorStop(1, '#8c6139');
+        context.fillStyle = grad;
+        context.fillRect(0, 0, width, height);
+
+        context.save();
+        context.strokeStyle = 'rgba(65, 38, 15, 0.14)';
+        context.lineWidth = 3;
+        for (let i = -height; i < width + height; i += 46) {
+          context.beginPath();
+          context.moveTo(i, 0);
+          context.lineTo(i + height * 0.45, height);
+          context.stroke();
+        }
+
+        const shadowGrad = context.createLinearGradient(0, height * 0.35, width * 0.7, height);
+        shadowGrad.addColorStop(0, 'rgba(15, 23, 42, 0.25)');
+        shadowGrad.addColorStop(1, 'rgba(15, 23, 42, 0.05)');
+        context.fillStyle = shadowGrad;
+        context.beginPath();
+        context.moveTo(0, height * 0.35);
+        context.lineTo(width * 0.65, height * 0.42);
+        context.lineTo(width * 0.85, height);
+        context.lineTo(0, height);
+        context.closePath();
+        context.fill();
+
+        context.fillStyle = 'rgba(255, 255, 255, 0.88)';
+        context.font = '600 32px Inter, sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText('Pratinjau Foto Default', width / 2, height * 0.26);
+
+        context.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        context.font = '400 22px Inter, sans-serif';
+        context.fillText('Unggah foto Anda di Bagian 1 (Kiri Atas) untuk mengganti latar ini', width / 2, height * 0.305);
+        context.restore();
+      }
+
+      // --- Helper: Gambar Logo PLN dengan Opacity 100% Solid ---
+      function drawLogoBox(context, x, y, width, height, radius) {
+        const activeLogo = customLogoImage || (defaultLogoLoaded ? defaultLogoImage : null);
+
+        context.save();
+        context.globalAlpha = 1.0;
+        context.globalCompositeOperation = 'source-over';
+
+        drawRoundedRect(context, x, y, width, height, radius);
+        context.clip();
+
+        if (activeLogo) {
+          if (!customLogoImage) {
+            context.fillStyle = '#fff933';
+            context.fillRect(x, y, width, height);
+          }
+          context.filter = 'brightness(1.22) saturate(1.18) contrast(1.04)';
+          context.drawImage(activeLogo, x, y, width, height);
+          context.filter = 'none';
+        } else {
+          context.fillStyle = '#fff933';
+          context.fillRect(x, y, width, height);
+
+          context.strokeStyle = '#0ea5e9';
+          context.lineWidth = Math.min(width, height) * 0.075;
+          context.lineCap = 'round';
+          const waveOffsets = [0.38, 0.54, 0.70];
+          waveOffsets.forEach((ratio) => {
+            const wy = y + height * ratio;
+            context.beginPath();
+            context.moveTo(x + width * 0.14, wy);
+            context.bezierCurveTo(
+              x + width * 0.35, wy - height * 0.08,
+              x + width * 0.65, wy + height * 0.08,
+              x + width * 0.86, wy
+            );
+            context.stroke();
+          });
+
+          context.fillStyle = '#ef4444';
+          context.beginPath();
+          context.moveTo(x + width * 0.56, y + height * 0.10);
+          context.lineTo(x + width * 0.36, y + height * 0.54);
+          context.lineTo(x + width * 0.52, y + height * 0.54);
+          context.lineTo(x + width * 0.42, y + height * 0.92);
+          context.lineTo(x + width * 0.70, y + height * 0.44);
+          context.lineTo(x + width * 0.53, y + height * 0.44);
+          context.closePath();
+          context.fill();
+        }
+
+        context.restore();
+      }
+
+      // --- FUNGSI UTAMA: RENDER CANVAS ---
+      function renderCanvas() {
+        try {
+          const width = mainImage ? mainImage.naturalWidth : 900;
+          const height = mainImage ? mainImage.naturalHeight : 1200;
+
+          if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+          }
+
+          ctx.clearRect(0, 0, width, height);
+
+          if (mainImage) {
+            ctx.drawImage(mainImage, 0, 0, width, height);
+          } else {
+            drawPlaceholderPhoto(ctx, width, height);
+          }
+
+          const minDim = Math.min(width, height);
+          const s = (minDim / 1000) * watermarkScale;
+
+          const tallScaleY = 1.24;
+          const timeTallScaleY = 1.28;
+
+          const title1 = inputTitle1.value || '';
+          const title2 = inputTitle2.value || '';
+          const timeStr = inputTime.value || '00:00';
+          const dayStr = inputDay.value || '';
+          const dateStr = inputDate.value || '';
+          const locationStr = inputLocation.value || '';
+          const codeStr = inputCode.value || '';
+
+          // A. WATERMARK KANAN ATAS ("Timemark")
+          if (toggleTimemarkTop.checked) {
+            ctx.save();
+            const topMargin = 26 * s;
+            const rightMargin = 24 * s;
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+            ctx.shadowBlur = 8 * s;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 2 * s;
+            ctx.textBaseline = 'top';
+            ctx.textAlign = 'right';
+
+            ctx.save();
+            ctx.translate(width - rightMargin, topMargin);
+            ctx.scale(1, 1.22);
+            ctx.font = `700 ${42 * s}px "Barlow Condensed", Inter, sans-serif`;
+            const markWidth = ctx.measureText('mark').width;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('mark', 0, 0);
+
+            ctx.fillStyle = '#facc15';
+            ctx.fillText('Time', -markWidth, 0);
+
+            ctx.font = `500 ${21 * s}px "Barlow Condensed", Inter, sans-serif`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillText('Foto 100% akurat', 0, 44 * s);
+            ctx.restore();
+            ctx.restore();
+          }
+
+          // B. WATERMARK SAMPING KANAN ("Timemark Verified")
+          if (toggleVerifiedSide.checked) {
+            ctx.save();
+            const sideX = width - 26 * s;
+            const sideY = height * 0.44;
+
+            ctx.translate(sideX, sideY);
+            ctx.rotate(-Math.PI / 2);
+            ctx.scale(1, 1.22);
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+            ctx.shadowBlur = 5 * s;
+            ctx.font = `500 ${23 * s}px "Barlow Condensed", Inter, sans-serif`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.90)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const verifiedText = `✓ ${codeStr}   Timemark Verified`;
+            ctx.fillText(verifiedText, 0, 0);
+            ctx.restore();
+          }
+
+          // C. KARTU WATERMARK UTAMA (KIRI BAWAH)
+          const cardMargin = 22 * s;
+          const padX = 24 * s;
+          const padY = 22 * s;
+          const baseCardWidth = 540 * s * watermarkWidthFactor;
+          const cardWidth = Math.min(baseCardWidth, width - cardMargin * 2);
+
+          const logoW = 103.79 * s;
+          const logoH = 100 * s;
+          const logoLeftGap = 10 * s;
+          const logoTopGap = 10 * s;
+          const logoBottomGap = 10 * s;
+
+          const locFontSize = 40 * s;
+          const locLineHeight = 56 * s;
+          const locTextOffsetX = 31 * s;
+          const maxLocWidth = Math.max(80 * s, cardWidth - padX * 2 - locTextOffsetX);
+
+          ctx.save();
+          ctx.letterSpacing = `${2.8 * s}px`;
+          ctx.font = `400 ${locFontSize}px "Roboto Condensed", "Barlow Condensed", sans-serif`;
+          const locLines = wrapText(ctx, locationStr, maxLocWidth);
+          ctx.restore();
+
+          const headerTotalHeight = logoTopGap + logoH + logoBottomGap;
+          const afterDividerGap = 34 * s;
+          const timeSectionHeight = 128 * s;
+          const locSectionHeight = Math.max(locLineHeight, locLines.length * locLineHeight);
+          const cardHeight = headerTotalHeight + afterDividerGap + timeSectionHeight + locSectionHeight + padY;
+
+          const cardX = cardMargin;
+          const cardY = height - cardMargin - cardHeight;
+
+          // 1. Latar Belakang Kartu Gelap Semi-Transparan
+          ctx.save();
+          drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 14 * s);
+          ctx.fillStyle = 'rgba(20, 22, 26, 0.35)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.lineWidth = 1.5 * s;
+          ctx.stroke();
+          ctx.restore();
+
+          // 2. Logo PLN di Kiri Atas Kartu
+          const logoX = cardX + logoLeftGap;
+          const logoY = cardY + logoTopGap;
+          drawLogoBox(ctx, logoX, logoY, logoW, logoH, 8 * s);
+
+          // 3. Judul Baris 1 & Baris 2 di Samping Logo
+          const textStartX = logoX + logoW + 20 * s;
+          const maxTitleWidth = Math.max(60 * s, cardWidth - (textStartX - cardX) - padX);
+
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+
+          // Judul Baris 1
+          ctx.save();
+          ctx.letterSpacing = `${3.6 * s}px`;
+          ctx.translate(textStartX, logoY + 4 * s);
+          ctx.scale(1, tallScaleY);
+          const title1Size = 41 * s;
+          ctx.font = `700 ${title1Size}px "Barlow Condensed", Inter, sans-serif`;
+
+          const title1Grad = ctx.createLinearGradient(0, 3 * s, 0, title1Size * 0.92);
+          title1Grad.addColorStop(0, '#e3ba58');
+          title1Grad.addColorStop(0.5, '#fff67a');
+          title1Grad.addColorStop(1, '#e3ba58');
+
+          ctx.fillStyle = title1Grad;
+          ctx.fillText(title1, 0, 0, maxTitleWidth);
+          ctx.restore();
+
+          // Judul Baris 2
+          ctx.save();
+          ctx.letterSpacing = `${3.6 * s}px`;
+          ctx.translate(textStartX, logoY + 54 * s);
+          ctx.scale(1, tallScaleY);
+          ctx.font = `700 ${36 * s}px "Barlow Condensed", Inter, sans-serif`;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(title2, 0, 0, maxTitleWidth);
+          ctx.restore();
+
+          // 4. Garis Pemisah Kuning & Deretan Panah ">>>>>>"
+          const dividerY = logoY + logoH + logoBottomGap;
+          ctx.save();
+          drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 14 * s);
+          ctx.clip();
+
+          ctx.fillStyle = '#d4af37';
+          ctx.fillRect(cardX, dividerY, cardWidth, 3.5 * s);
+
+          ctx.letterSpacing = '0px';
+          ctx.font = `700 ${16 * s}px monospace`;
+          ctx.fillStyle = 'rgba(237, 224, 154, 0.55)';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          const arrowCharWidth = ctx.measureText('>').width;
+          const arrowCount = Math.max(5, Math.ceil(cardWidth / arrowCharWidth));
+          ctx.fillText('>'.repeat(arrowCount), cardX, dividerY + 8 * s);
+          ctx.restore();
+
+          // 5. Baris Jam + Hari & Tanggal
+          const timeRowY = dividerY + afterDividerGap;
+          const timeX = cardX + padX;
+
+          ctx.save();
+          ctx.letterSpacing = `${2.2 * s}px`;
+          ctx.font = `600 ${92 * s}px "Barlow Condensed", Inter, sans-serif`;
+          const timeWidth = ctx.measureText(timeStr).width;
+          ctx.translate(timeX, timeRowY - 6 * s);
+          ctx.scale(1, timeTallScaleY);
+          ctx.fillStyle = '#ede09a';
+          ctx.textBaseline = 'top';
+          ctx.fillText(timeStr, 0, 0);
+          ctx.restore();
+
+          const dateColX = timeX + timeWidth + 22 * s;
+          const maxDateWidth = Math.max(60 * s, cardWidth - (dateColX - cardX) - padX);
+
+          ctx.save();
+          ctx.letterSpacing = `${2.8 * s}px`;
+          ctx.translate(dateColX, timeRowY + 4 * s);
+          ctx.scale(1, tallScaleY);
+          ctx.font = `400 ${39 * s}px "Roboto Condensed", "Barlow Condensed", sans-serif`;
+          ctx.fillStyle = '#ffffff';
+          ctx.textBaseline = 'top';
+          ctx.fillText(dayStr, 0, 0, maxDateWidth);
+          ctx.restore();
+
+          ctx.save();
+          ctx.letterSpacing = `${2.8 * s}px`;
+          ctx.translate(dateColX, timeRowY + 56 * s);
+          ctx.scale(1, tallScaleY);
+          ctx.font = `400 ${41 * s}px "Roboto Condensed", "Barlow Condensed", sans-serif`;
+          ctx.fillStyle = '#ffffff';
+          ctx.textBaseline = 'top';
+          ctx.fillText(dateStr, 0, 0, maxDateWidth);
+          ctx.restore();
+
+          // 6. Baris Alamat Lokasi dengan Kotak Aksen Kuning
+          const locStartY = timeRowY + timeSectionHeight;
+          const dotWidth = 15 * s;
+          const dotHeight = dotWidth * 2;
+          const dotX = cardX + padX + 2 * s;
+          const baseDotY = locStartY + (locFontSize * tallScaleY) / 2 - dotWidth / 2;
+          const dotY = baseDotY - dotWidth;
+
+          ctx.save();
+          ctx.fillStyle = '#e5b93c';
+          ctx.fillRect(dotX, dotY, dotWidth, dotHeight);
+          ctx.restore();
+
+          ctx.save();
+          ctx.letterSpacing = `${2.8 * s}px`;
+          ctx.font = `400 ${locFontSize}px "Roboto Condensed", "Barlow Condensed", sans-serif`;
+          ctx.fillStyle = '#f8fafc';
+          ctx.textBaseline = 'top';
+
+          locLines.forEach((line, index) => {
+            ctx.save();
+            ctx.translate(cardX + padX + locTextOffsetX, locStartY + index * locLineHeight);
+            ctx.scale(1, tallScaleY);
+            ctx.fillText(line, 0, 0);
+            ctx.restore();
+          });
+          ctx.restore();
+
+        } catch (err) {
+          console.error('Gagal merender canvas:', err);
+        }
+      }
+
+      // ==================== EVENT HANDLER: UPLOAD GAMBAR & LOGO ====================
+      function handleImageFile(file) {
+        if (!file || !file.type.startsWith('image/')) {
+          showToast('Harap pilih file gambar yang valid (JPG, PNG, WEBP).', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            mainImage = img;
+            fileNameDisplay.textContent = `${file.name} (${img.naturalWidth} × ${img.naturalHeight} px)`;
+            generateRandomCode(false);
+            renderCanvas();
+            showToast('Foto berhasil dimuat!', 'success');
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function generateRandomCode(shouldRender = true) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let result = '';
+        for (let i = 0; i < 14; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        inputCode.value = result;
+        if (shouldRender) {
+          renderCanvas();
+        }
+      }
+
+      btnRandomCode.addEventListener('click', () => generateRandomCode(true));
+
+      // Klik & seret foto pada drop-zone
+      dropZone.addEventListener('click', () => imageUpload.click());
+      imageUpload.addEventListener('change', (e) => {
+        if (e.target.files[0]) handleImageFile(e.target.files[0]);
+      });
+
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-amber-500', 'bg-amber-50');
+      });
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-amber-500', 'bg-amber-50');
+      });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-amber-500', 'bg-amber-50');
+        if (e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]);
+      });
+
+      // Upload Logo Kustom
+      btnUploadLogo.addEventListener('click', () => logoUpload.click());
+      logoUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            customLogoImage = img;
+            btnResetLogo.classList.remove('hidden');
+            renderCanvas();
+            showToast('Logo kustom berhasil diterapkan!', 'success');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      btnResetLogo.addEventListener('click', () => {
+        customLogoImage = null;
+        logoUpload.value = '';
+        btnResetLogo.classList.add('hidden');
+        renderCanvas();
+        showToast('Logo dikembalikan ke default.', 'info');
+      });
+
+      // ==================== INPUT TEKS, DATE/TIME PICKER & SLIDER ====================
+      const hariIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const bulanIndo = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+
+      function syncDatePickerToInputs(dateValue) {
+        if (!dateValue) return;
+        const parts = dateValue.split('-');
+        if (parts.length !== 3) return;
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const d = new Date(year, month, day);
+        if (isNaN(d.getTime())) return;
+
+        inputDay.value = hariIndo[d.getDay()];
+        inputDate.value = `${d.getDate()} ${bulanIndo[d.getMonth()]} ${d.getFullYear()}`;
+        renderCanvas();
+      }
+
+      inputDatePicker.addEventListener('change', (e) => {
+        syncDatePickerToInputs(e.target.value);
+      });
+
+      [inputTitle1, inputTitle2, inputTime, inputDay, inputDate, inputLocation, inputCode].forEach((el) => {
+        el.addEventListener('input', renderCanvas);
+      });
+
+      [toggleTimemarkTop, toggleVerifiedSide].forEach((el) => {
+        el.addEventListener('change', renderCanvas);
+      });
+
+      scaleSlider.addEventListener('input', (e) => {
+        watermarkScale = parseFloat(e.target.value);
+        scaleValueDisplay.textContent = `${Math.round(watermarkScale * 100)}%`;
+        renderCanvas();
+      });
+
+      widthSlider.addEventListener('input', (e) => {
+        watermarkWidthFactor = parseFloat(e.target.value);
+        widthValueDisplay.textContent = `${Math.round(watermarkWidthFactor * 100)}%`;
+        renderCanvas();
+      });
+
+      btnSetNow.addEventListener('click', () => {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const mo = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+
+        inputTime.value = `${hh}:${mm}`;
+        inputDatePicker.value = `${yyyy}-${mo}-${dd}`;
+        inputDay.value = hariIndo[now.getDay()];
+        inputDate.value = `${now.getDate()} ${bulanIndo[now.getMonth()]} ${yyyy}`;
+        renderCanvas();
+        showToast('Waktu diperbarui ke waktu saat ini.', 'success');
+      });
+
+      // ==================== UNDUH HASIL FOTO ====================
+      function downloadImage(format) {
+        try {
+          const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+          const ext = format === 'png' ? 'png' : 'jpg';
+          const dataUrl = canvas.toDataURL(mimeType, 0.95);
+          const link = document.createElement('a');
+          const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+          link.download = `timemark-${timestamp}.${ext}`;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showToast(`Foto berhasil diunduh dalam format ${ext.toUpperCase()}!`, 'success');
+        } catch (err) {
+          console.error('Gagal mengunduh gambar:', err);
+          showToast('Gagal mengunduh foto. Coba gunakan logo lokal jika terjadi kendala CORS.', 'error');
+        }
+      }
+
+      btnDownloadTop.addEventListener('click', () => downloadImage('jpg'));
+      btnDownloadJpg.addEventListener('click', () => downloadImage('jpg'));
+      btnDownloadPng.addEventListener('click', () => downloadImage('png'));
+
+      // ==================== DROPDOWN OPSI & UNDUH HASIL FOTO ====================
+      const resultDropdownWrapper = document.getElementById('result-dropdown-wrapper');
+      const btnResultDropdown = document.getElementById('btn-result-dropdown');
+      const resultDropdownMenu = document.getElementById('result-dropdown-menu');
+      const resultDropdownChevron = document.getElementById('result-dropdown-chevron');
+
+      btnResultDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = resultDropdownMenu.classList.toggle('hidden');
+        resultDropdownChevron.classList.toggle('rotate-180', !isHidden);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!resultDropdownWrapper.contains(e.target)) {
+          resultDropdownMenu.classList.add('hidden');
+          resultDropdownChevron.classList.remove('rotate-180');
+        }
+      });
+
+      // ==================== PETA INTERAKTIF GAYA GOOGLE MAPS ====================
+      const defaultLat = -7.2586;
+      const defaultLng = 109.9482;
+
+      const map = L.map('map', {
+        center: [defaultLat, defaultLng],
+        zoom: 15,
+        zoomControl: true
+      });
+
+      const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      });
+
+      const googleSatellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      });
+
+      googleStreets.addTo(map);
+
+      btnLayerStreet.addEventListener('click', () => {
+        map.removeLayer(googleSatellite);
+        googleStreets.addTo(map);
+        btnLayerStreet.className = 'px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-600 text-white transition';
+        btnLayerSatellite.className = 'px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-slate-600 hover:bg-slate-100 transition';
+      });
+
+      btnLayerSatellite.addEventListener('click', () => {
+        map.removeLayer(googleStreets);
+        googleSatellite.addTo(map);
+        btnLayerSatellite.className = 'px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-600 text-white transition';
+        btnLayerStreet.className = 'px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-slate-600 hover:bg-slate-100 transition';
+      });
+
+      const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+
+      async function fetchAddressFromCoords(lat, lng) {
+        coordDisplay.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        mapLoading.classList.remove('hidden');
+
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=id`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Gagal mengambil data alamat');
+          const data = await res.json();
+
+          if (data && data.address) {
+            const a = data.address;
+            const parts = [
+              a.road || a.pedestrian || a.neighbourhood || a.hamlet,
+              a.village || a.suburb || a.town,
+              a.municipality || a.city_district,
+              a.county || a.city,
+              a.state,
+              a.postcode
+            ].filter(Boolean);
+
+            const uniqueParts = parts.filter((val, idx, arr) => arr.indexOf(val) === idx);
+            const formattedAddress = uniqueParts.length > 0 ? uniqueParts.join(', ') : (data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+
+            inputLocation.value = formattedAddress;
+            renderCanvas();
+          }
+        } catch (err) {
+          console.error('Reverse geocoding error:', err);
+          showToast('Gagal mengambil nama alamat otomatis. Anda bisa mengetik manual.', 'error');
+        } finally {
+          mapLoading.classList.add('hidden');
+        }
+      }
+
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        marker.setLatLng([lat, lng]);
+        fetchAddressFromCoords(lat, lng);
+      });
+
+      marker.on('dragend', () => {
+        const { lat, lng } = marker.getLatLng();
+        fetchAddressFromCoords(lat, lng);
+      });
+
+      async function searchMapLocation() {
+        const query = mapSearchInput.value.trim();
+        if (!query) return;
+
+        mapLoading.classList.remove('hidden');
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=id`;
+          const res = await fetch(url);
+          const results = await res.json();
+
+          if (results && results.length > 0) {
+            const lat = parseFloat(results[0].lat);
+            const lng = parseFloat(results[0].lon);
+            map.setView([lat, lng], 16);
+            marker.setLatLng([lat, lng]);
+            fetchAddressFromCoords(lat, lng);
+          } else {
+            showToast('Lokasi tidak ditemukan. Coba kata kunci yang lebih spesifik.', 'error');
+          }
+        } catch (err) {
+          showToast('Terjadi kesalahan saat mencari lokasi.', 'error');
+        } finally {
+          mapLoading.classList.add('hidden');
+        }
+      }
+
+      btnSearchMap.addEventListener('click', searchMapLocation);
+      mapSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          searchMapLocation();
+        }
+      });
+
+      btnMyLocation.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          showToast('Browser Anda tidak mendukung fitur GPS.', 'error');
+          return;
+        }
+        mapLoading.classList.remove('hidden');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            map.setView([latitude, longitude], 17);
+            marker.setLatLng([latitude, longitude]);
+            fetchAddressFromCoords(latitude, longitude);
+            showToast('Lokasi GPS berhasil ditemukan!', 'success');
+          },
+          () => {
+            mapLoading.classList.add('hidden');
+            showToast('Izin lokasi ditolak atau GPS tidak aktif.', 'error');
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+
+      // ==================== INISIALISASI AWAL & CALLBACK TAB ====================
+      generateRandomCode(false);
+      loadDefaultLogo();
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+          renderCanvas();
+        });
+      }
+      renderCanvas();
+
+      // Callback yang dipanggil saat pengguna berpindah ke tab Kuning
+      window.kuningOnShow = () => {
+        setTimeout(() => {
+          map.invalidateSize();
+          renderCanvas();
+        }, 120);
+      };
+
+      window.addEventListener('resize', () => map.invalidateSize());
+
+      // Pastikan halaman awal adalah Putih
+      switchPage('putih');
+    });
+  </script>
+
+</body>
+</html>
